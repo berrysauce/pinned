@@ -1,0 +1,15 @@
+{
+  "scripts": {
+    "dev": "wrangler dev src/index.ts",
+    "deploy": "wrangler deploy --minify src/index.ts"
+  },
+  "dependencies": {
+    "@types/cheerio": "^0.22.32",
+    "cheerio": "^1.0.0-rc.12",
+    "hono": "^3.7.2"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20230914.0",
+    "wrangler": "^3.13.1"
+  }
+}
