@@ -1,6 +1,6 @@
 # 📌 Pinned
 
-Pinned is an API that returns pinned repositories for the requested username from GitHub.
+Pinned is an API that returns pinned repositories for the requested username from GitHub. This is ideal for creating a "Pinned Repositories" section on your website.
 
 ```http
 GET  https://pinned.berrysauce.me/get/username
@@ -10,22 +10,6 @@ Replace `username` with your GitHub username. Pinned will return the JSON in the
 
 ```json
 [
-    { 
-        "author": "berrysauce",
-        "name": "junk.boats",
-        "description": "♻️ The free temporary email service powered by Cloudflare",
-        "language": "CSS",
-        "stars": 53,
-        "forks": 0 
-    },
-    { 
-        "author": "berrysauce",
-        "name": "ingredients",
-        "description": "🧪 Determine the \"ingredients\" (or technologies) behind a website",
-        "language": "Svelte",
-        "stars": 58,
-        "forks": 0 
-    },
     { 
         "author": "berrysauce",
         "name": "whatdevsneed",
@@ -46,6 +30,9 @@ If Pinned runs into an error, the response will have a `500` HTTP status code an
     "error": ...
 }
 ```
+
+> [!NOTE]  
+> This API has a 5 minute cache in place to reduce requests to the origin. With this said, it might take a moment for your pinned repositories to update.
 
 ## Development
 
