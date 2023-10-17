@@ -22,11 +22,11 @@ Replace `username` with your GitHub username. Pinned will return the JSON in the
 ]
 ```
 
-If Pinned runs into an error, the response will have a `500` HTTP status code and the following response text:
+If Pinned runs into an error, it will return a response with a response code other than `200` and the following format:
 
 ```json
 {
-    "detail": "Error parsing HTML",
+    "detail": "Error parsing HTML"
 }
 ```
 
