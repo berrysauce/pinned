@@ -1,5 +1,7 @@
 import { Hono } from "hono"
+import { cors } from "hono/cors"
 import { cache } from "hono/cache"
+import { prettyJSON } from "hono/pretty-json"
 import { secureHeaders } from "hono/secure-headers"
 
 import * as cheerio from "cheerio"
@@ -7,7 +9,16 @@ import * as cheerio from "cheerio"
 const app = new Hono()
 
 // add middleware
+app.use("*", prettyJSON({ space: 4 }))
 app.use("*", secureHeaders())
+app.use(
+    "*",
+    cors({
+        origin: "*",
+        allowMethods: ["GET"]
+    })
+)
+
 // add 5 minute cache to all requests
 app.get(
     "*",

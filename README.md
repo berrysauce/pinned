@@ -22,6 +22,8 @@ Replace `username` with your GitHub username. Pinned will return the JSON in the
 ]
 ```
 
+You can add `?pretty` at the end of your request to get a formatted response.
+
 If Pinned runs into an error, it will return a response with a response code other than `200` and the following format:
 
 ```json
