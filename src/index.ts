@@ -30,7 +30,8 @@ app.get(
 
 
 app.get("/", async (c) => {
-    return c.text("📌 PINNED\nPlease use /get/username to get the pinned repositories of a GitHub user")
+    return c.redirect("https://github.com/berrysauce/pinned", 301)
+    // return c.text("📌 PINNED\nPlease use /get/username to get the pinned repositories of a GitHub user")
 })
 
 
