@@ -27,7 +27,6 @@ If Pinned runs into an error, the response will have a `500` HTTP status code an
 ```json
 {
     "detail": "Error parsing HTML",
-    "error": ...
 }
 ```
 

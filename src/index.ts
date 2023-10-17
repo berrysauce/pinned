@@ -80,9 +80,9 @@ app.get("/get/:username", async (c) => {
             pinned_repos.push(repo_data)
         });
     } catch(e) {
+        c.status(500)
         return c.json({
-            "detail": "Error parsing HTML",
-            "error": e
+            "detail": "Error parsing HTML"
         })
     }
 
