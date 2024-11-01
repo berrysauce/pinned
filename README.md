@@ -3,7 +3,7 @@
 Pinned is an API that returns pinned repositories for the requested username from GitHub. This is ideal for creating a "Pinned Repositories" section on your website.
 
 ```http
-GET  https://pinned.berrysauce.me/get/username
+GET  https://pinned.berrysauce.dev/get/username
 ```
 
 Replace `username` with your GitHub username. Pinned will return the JSON in the following format:
