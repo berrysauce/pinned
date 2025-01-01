@@ -1,129 +1,135 @@
-import { Hono } from "hono"
-import { cors } from "hono/cors"
-import { cache } from "hono/cache"
-import { prettyJSON } from "hono/pretty-json"
-import { secureHeaders } from "hono/secure-headers"
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { cache } from "hono/cache";
+import { prettyJSON } from "hono/pretty-json";
+import { secureHeaders } from "hono/secure-headers";
 
-import * as cheerio from "cheerio"
+import { parse, HTMLElement } from "node-html-parser";
 
-const app = new Hono()
+type Bindings = {
+  dev?: boolean;
+};
 
-// add middleware
-app.use("*", prettyJSON({ space: 4 }))
-app.use("*", secureHeaders())
+const app = new Hono<{ Bindings: Bindings }>();
+
+// Configure middleware for JSON formatting, security headers and CORS
+app.use("*", prettyJSON({ space: 4 }));
+app.use("*", secureHeaders());
 app.use(
-    "*",
-    cors({
-        origin: "*",
-        allowMethods: ["GET"]
-    })
-)
+  "*",
+  cors({
+    origin: "*",
+    allowMethods: ["GET"],
+  })
+);
 
-// add 5 minute cache to all requests
-app.get(
-    "*",
-    cache({
-        cacheName: "gh-request-cache",
-        cacheControl: "max-age=300",
-    })
-)
+// Enable 5 minute caching for all routes in production
+app.use("*", async (c, next) => {
+  if (!c.env.dev) {
+    return cache({
+      cacheName: "gh-request-cache",
+      cacheControl: "max-age=300",
+    })(c, next);
+  }
+  return next();
+});
 
-
+// Redirect root path to GitHub repository
 app.get("/", async (c) => {
-    return c.redirect("https://github.com/berrysauce/pinned", 301)
-    // return c.text("📌 PINNED\nPlease use /get/username to get the pinned repositories of a GitHub user")
-})
+  return c.redirect("https://github.com/berrysauce/pinned", 301);
+  // return c.text("📌 PINNED\nPlease use /get/username to get the pinned repositories of a GitHub user")
+});
 
+// Define structure for repository data
+interface RepositoryData {
+  author: string;
+  name: string;
+  description: string;
+  language: string;
+  stars?: number;
+  forks?: number;
+}
 
+function parseRepository(root: HTMLElement, el: HTMLElement): RepositoryData {
+  const repoPath =
+    el.querySelector("a")?.getAttribute("href")?.split("/") || [];
+  const [, author = "", name = ""] = repoPath;
+
+  const parseMetric = (index: number): number => {
+    try {
+      return (
+        Number(
+          el
+            .querySelectorAll("a.pinned-item-meta")
+            [index]?.text?.replace(/\n/g, "")
+            .trim()
+        ) || 0
+      );
+    } catch {
+      return 0;
+    }
+  };
+
+  return {
+    author,
+    name,
+    description:
+      el.querySelector("p.pinned-item-desc")?.text?.replace(/\n/g, "").trim() ||
+      "",
+    language:
+      el.querySelector("span[itemprop='programmingLanguage']")?.text || "",
+    stars: parseMetric(0),
+    forks: parseMetric(1),
+  };
+}
+
+// Fetch and parse pinned repositories for a given GitHub username
 app.get("/get/:username", async (c) => {
-    const username = c.req.param("username")
+  const username = c.req.param("username");
 
-    // get HTML of GitHub profile
-    let request: Response
-    try {
-        request = await fetch(`https://github.com/${username}`)
-    } catch {
-        c.status(500)
-        return c.json({
-            "detail": "Error fetching user"
-        })
-    }
+  // Fetch the GitHub profile HTML
+  let request: Response;
+  try {
+    request = await fetch(`https://github.com/${username}`);
+  } catch {
+    c.status(500);
+    return c.json({
+      detail: "Error fetching user",
+    });
+  }
 
-    // added some HTTP error handling
-    if (request.status == 404) {
-        c.status(404)
-        return c.json({
-            "detail": "User not found"
-        })
-    } else if (request.status == 429) {
-        c.status(429)
-        return c.json({
-            "detail": "Origin rate limit exceeded"
-        })
-    } else if (request.status != 200) {
-        c.status(500)
-        return c.json({
-            "detail": "Error fetching user"
-        })
-    }
+  // Handle common HTTP error responses
+  const errorResponses: Record<number, { status: number; message: string }> = {
+    404: { status: 404, message: "User not found" },
+    429: { status: 429, message: "Origin rate limit exceeded" },
+  };
 
-    const html = await request.text()
+  const errorResponse = errorResponses[request.status];
+  if (errorResponse) {
+    c.status(errorResponse.status);
+    return c.json({ detail: errorResponse.message });
+  }
 
-    // create cheerio object with HTML
-    const $ = cheerio.load(html)
+  if (request.status !== 200) {
+    c.status(500);
+    return c.json({ detail: "Error fetching user" });
+  }
 
-    let pinned_repos: string[] = []
+  const html = await request.text();
+  const root = parse(html);
 
-    try {
-        // loop through each pinned repository in the item list
-        $(".js-pinned-item-list-item").each((i, el) => {
-            // create interface for variable type and make stars and forks optional
-            interface RepositoryData {
-                author: string,
-                name: string,
-                description: string,
-                language: string,
-                stars?: number,
-                forks?: number
-            }
+  try {
+    const pinned_repos = root
+      .querySelectorAll(".js-pinned-item-list-item")
+      .map((el) => parseRepository(root, el));
 
-            /* 
-            .replace(/\n/g, "") removes all newline characters
-            .trim() removes all leading and trailing whitespaces
-            */
-            let repo_data: RepositoryData = {
-                "author": $(el).find("a").get(0).attribs.href.split("/")[1], 
-                "name": $(el).find("a").get(0).attribs.href.split("/")[2],
-                "description": $(el).find("p.pinned-item-desc").text().replace(/\n/g, "").trim(),
-                "language": $(el).find("span[itemprop='programmingLanguage']").text()
-            }
+    return c.json(pinned_repos);
+  } catch {
+    c.status(500);
+    return c.json({
+      detail: "Error parsing user",
+    });
+  }
+});
 
-            // run star and fork checks in try catch blocks to prevent errors (if they are not present in HTML)
-
-            try {
-                repo_data["stars"] = Number($(el).find("a.pinned-item-meta:first").text().replace(/\n/g, "").trim())
-            } catch {
-                repo_data["stars"] = 0
-            }
-
-            try {
-                repo_data["forks"] = Number($(el).find("a.pinned-item-meta:second").text().replace(/\n/g, "").trim())
-            } catch {
-                repo_data["forks"] = 0
-            }
-
-            // add repository data to pinned_repos arrays
-            pinned_repos.push(repo_data)
-        });
-    } catch {
-        c.status(500)
-        return c.json({
-            "detail": "Error parsing user"
-        })
-    }
-
-    return c.json(pinned_repos)
-})
-
-
-export default app
+export default app;
