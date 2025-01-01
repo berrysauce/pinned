@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import { cache } from "hono/cache";
 import { prettyJSON } from "hono/pretty-json";
 import { secureHeaders } from "hono/secure-headers";
+import { StatusCode } from "hono/utils/http-status";
 
 import { parse, HTMLElement } from "node-html-parser";
 
@@ -99,7 +100,7 @@ app.get("/get/:username", async (c) => {
   }
 
   // Handle common HTTP error responses
-  const errorResponses: Record<number, { status: number; message: string }> = {
+  const errorResponses: Record<number, { status: StatusCode; message: string }> = {
     404: { status: 404, message: "User not found" },
     429: { status: 429, message: "Origin rate limit exceeded" },
   };
