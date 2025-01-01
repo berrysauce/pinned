@@ -41,13 +41,13 @@ If Pinned runs into an error, it will return a response with a response code oth
 
 Clone the repository, `cd` into it and run the following commands to install dependencies and run the code:
 
-```
-npm install
-npm run dev
+```bash
+bun install
+bun run dev
 ```
 
 Pinned is deployed on [Cloudflare Workers](https://workers.cloudflare.com/). To deploy Pinned, run the following command:
 
-```
-npm run deploy
+```bash
+bun run deploy
 ```

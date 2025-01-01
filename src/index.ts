@@ -26,7 +26,7 @@ app.use(
 
 // Enable 5 minute caching for all routes in production
 app.use("*", async (c, next) => {
-  if (!c.env.dev) {
+  if (c.env.dev === false) {
     return cache({
       cacheName: "gh-request-cache",
       cacheControl: "max-age=300",
@@ -45,10 +45,25 @@ app.get("/", async (c) => {
 interface RepositoryData {
   author: string;
   name: string;
+  url: string;
   description: string;
   language: string;
+  languageColor?: string;
+  languageIcon?: string;
   stars?: number;
   forks?: number;
+}
+
+// Map special language names to their simple-icons slugs
+function mapLanguageName(lang: string): string {
+  const mapping: Record<string, string> = {
+    "C#": "csharp",
+    "F#": "fsharp",
+    "C++": "cplusplus",
+    "Visual Basic": "visualbasic",
+    ".NET": "dotnet",
+  };
+  return mapping[lang] || lang.toLowerCase();
 }
 
 function parseRepository(root: HTMLElement, el: HTMLElement): RepositoryData {
@@ -71,14 +86,29 @@ function parseRepository(root: HTMLElement, el: HTMLElement): RepositoryData {
     }
   };
 
+  const languageSpan = el.querySelector("span[itemprop='programmingLanguage']");
+  const languageColorSpan = languageSpan?.parentNode?.querySelector(
+    ".repo-language-color"
+  );
+  const language = languageSpan?.text || "";
+
   return {
     author,
     name,
+    url: `https://github.com/${author}/${name}`,
     description:
       el.querySelector("p.pinned-item-desc")?.text?.replace(/\n/g, "").trim() ||
       "",
-    language:
-      el.querySelector("span[itemprop='programmingLanguage']")?.text || "",
+    language,
+    languageColor:
+      languageColorSpan
+        ?.getAttribute("style")
+        ?.match(/background-color:\s*([^;]+)/)?.[1] || "",
+    languageIcon: language
+      ? `https://cdn.simpleicons.org/${encodeURIComponent(
+          mapLanguageName(language)
+        )}`
+      : "",
     stars: parseMetric(0),
     forks: parseMetric(1),
   };
@@ -100,7 +130,10 @@ app.get("/get/:username", async (c) => {
   }
 
   // Handle common HTTP error responses
-  const errorResponses: Record<number, { status: StatusCode; message: string }> = {
+  const errorResponses: Record<
+    number,
+    { status: StatusCode; message: string }
+  > = {
     404: { status: 404, message: "User not found" },
     429: { status: 429, message: "Origin rate limit exceeded" },
   };
