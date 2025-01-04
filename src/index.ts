@@ -37,8 +37,19 @@ app.use("*", async (c, next) => {
 
 // Redirect root path to GitHub repository
 app.get("/", async (c) => {
-  return c.redirect("https://github.com/berrysauce/pinned", 301);
-  // return c.text("📌 PINNED\nPlease use /get/username to get the pinned repositories of a GitHub user")
+  const accept = c.req.header("Accept") || "";
+  const userAgent = c.req.header("User-Agent") || "";
+
+  // Check if request is from a browser (prefers HTML or is a common browser)
+  const isBrowser =
+    accept.includes("text/html") ||
+    /chrome|firefox|safari|edge|opera/i.test(userAgent);
+
+  return isBrowser
+    ? c.redirect("https://github.com/berrysauce/pinned", 301)
+    : c.text(
+        "📌 PINNED\nPlease use /get/username to get the pinned repositories of a GitHub user"
+      );
 });
 
 // Define structure for repository data
