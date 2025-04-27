@@ -47,6 +47,7 @@ interface RepositoryData {
   name: string;
   description: string;
   language: string;
+  languageColor?: string;
   stars?: number;
   forks?: number;
 }
@@ -71,6 +72,11 @@ function parseRepository(root: HTMLElement, el: HTMLElement): RepositoryData {
     }
   };
 
+  const languageSpan = el.querySelector("span[itemprop='programmingLanguage']");
+  const languageColorSpan = languageSpan?.parentNode?.querySelector(
+    ".repo-language-color"
+  );
+
   return {
     author,
     name,
@@ -78,7 +84,9 @@ function parseRepository(root: HTMLElement, el: HTMLElement): RepositoryData {
       el.querySelector("p.pinned-item-desc")?.text?.replace(/\n/g, "").trim() ||
       "",
     language:
-      el.querySelector("span[itemprop='programmingLanguage']")?.text || "",
+      languageSpan?.text || "",
+    languageColor: 
+      languageColorSpan?.getAttribute("style")?.match(/background-color:\s*([^;]+)/)?.[1] || "",
     stars: parseMetric(0),
     forks: parseMetric(1),
   };
