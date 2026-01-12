@@ -1,7 +1,5 @@
 # 📌 Pinned
 
-![Uptime](https://uptime.berrysauce.dev/api/badge/8/uptime)
-
 Pinned is an API that returns pinned repositories for the requested username from GitHub. This is ideal for creating a "Pinned Repositories" section on your website.
 
 ```http
